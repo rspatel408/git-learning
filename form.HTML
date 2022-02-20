@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> PAYMENT FORM</title>
+    <style>
+
+        body{
+
+            background-image: url(666.webp);
+
+            background-size: 100%;
+        
+        }
+
+        .styled {
+            border: 0;
+            line-height: 2.5;
+            padding: 0 20px;
+            font-size: 1rem;
+            text-align: center;
+            color: #fff;
+            text-shadow: 1px 1px 1px;
+            border-radius: 10px;
+            background-color: rgb(216, 83, 109);
+        }
+        .styled:hover{
+            background-color: rgb(105, 3, 24);
+
+        }
+    </style>
+</head>
+<body>
+    <form action="ABOUT.HTML">
+
+        <h3 align="left"><img src="ogi.webp" height="150" width="200"></h3>
+    
+    <h1 style="background-color: cornflowerblue;" align="center"> PAYMENT FORM </h1>
+    <h2> USER DETAILS</h2>    
+
+
+    NAME : <input type="text" name="name" required>
+    <br>
+    <br>
+    <fieldset>
+    <p>
+        MALE:<input type="radio" name="male" id="gender">
+        FEMALE:<input type="radio" name="male"id="gender">
+    </p>
+    </fieldset>
+    <br>
+    ADDRESS:
+    <textarea name="address" id="address" cols="100" rows="10"></textarea>
+    <br>
+    <br>
+    E-MAIL:
+    <input type="email" name="email"id="email" required>
+    <br>
+    <br>
+    PINCODE: <input type="number" name="pincode" id="pincode" required>
+    <br>
+    <hr>
+    <h1 style="background-color: cornflowerblue;" align="center"> PAYMENT DETAILS</h1>
+     CARD TYPE:<select name="card_type"id="card_type">
+         <option value="">-- select card type--</option>
+         <option value="visa"> VISA</option>
+         <option value="rupay"> RUPPAY</option>
+         <option value="mastercard"> MASTER CARD</option>
+     </select>
+     <br>
+     <br>
+     <p> CARD NUMBER: <input type="number" name="cardnumber" id="cardnumber required" required> </p>
+     <br>
+     <br>
+<p>
+    EXPIRATION DATE: <input type="date" name="exp_date" id="exp_date"><br> <br>
+     <label for="start">START MONTH</label>
+     <input type="month"name="date"id="date"
+            min="2018-04"value="2018-06">
+
+</p>
+<p> CVV: <input type="password" name="cvv"id="cvv" required>
+</p>
+     
+ <button>
+     <a href="ABOUT.HTML"></a>
+ <input class="favorite styled"
+       type="button"
+       value="PAY NOW">
+       </button>
+    </form>
+     <br>
+     <br>
+     
+     <label for="rating">CUSTOMER RATING</label>
+     <BR>
+     <input type="range"name="rating"id="rating"
+          min="0"max="5">
+          <br>
+          <br>
+          <hr>
+          <h1 align="center"> MR.BEAN VIDEO</h1>
+          <video width="350"height="250" controls>
+              <source src="mr.bean.mp4" type="video/mp4"> 
+          </video>
+    
+</body>
+</html>

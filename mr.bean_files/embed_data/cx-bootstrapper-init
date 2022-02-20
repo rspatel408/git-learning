@@ -1,0 +1,548 @@
+var __spreadArray = (this && this.__spreadArray) || function (to, from) {
+    for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
+        to[j] = from[i];
+    return to;
+};
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+var CXBootstrapper = /** @class */ (function () {
+    function CXBootstrapper(groupId, base, esm6Mod) {
+        var _this = this;
+        var _a, _b;
+        this.lm = new CXBootstrapper.BootLogManager();
+        this.identifyAdvertVars = ['_fw_videoAdPlaying'];
+        this.videoAdvertIdentifierNodes = [
+            ['.np_TimerAd', 'display'],
+            ['#ad_countdownvideo-id', 'display'],
+            ['video[title="Advertisement"][src*="http"]', 'paused'],
+            ['#pac', 'display'],
+            ['.jw-vpaid-iframe', 'display'],
+        ];
+        this.isEsm6 = false;
+        this.isIframe = (window.location !== window.parent.location) ? true : false;
+        this.scriptTagNode = (_a = document.currentScript) !== null && _a !== void 0 ? _a : document.querySelector('script[src*="/cxo/cx-bootstrapper"]');
+        this.continuousLoad = false;
+        this.changingLogType = 'boot';
+        this.querySelectorId = null;
+        this.groupId = groupId;
+        this.isEsm6 = esm6Mod || false;
+        var scriptName = (this.isEsm6) ? 'cx-overlay.esm.js' : 'cx-overlay.js';
+        if (typeof this.scriptTagNode === 'undefined' || this.scriptTagNode === null || this.scriptTagNode.src.indexOf('/cxo/cx-bootstrapper') === -1) {
+            var invalidScriptSrc = this.scriptTagNode.src;
+            this.scriptTagNode = document.querySelector('script[src*="/cxo/cx-bootstrapper"]');
+            this.debugLog("constructor - Invalid script src: " + invalidScriptSrc + ". Updated to: " + this.scriptTagNode.src);
+        }
+        this.debugLog(this.scriptTagNode.src);
+        base = this.getBaseURL(base);
+        var cxOverlayUrl = base + "/cxo/" + scriptName;
+        var bootstrapperScripts = document.querySelectorAll('script[src*="/bootstrapper"]');
+        if (bootstrapperScripts.length > 0) {
+            bootstrapperScripts.forEach(function (s) {
+                if ((typeof _this.cxBootstrapperScript === 'undefined' || _this.cxBootstrapperScript === null) && (s.src.indexOf('catapultx.com') !== -1 || s.src.indexOf('localhost') !== -1)) {
+                    _this.cxBootstrapperScript = s;
+                }
+            });
+        }
+        var url = (typeof this.scriptTagNode !== 'undefined' && this.scriptTagNode !== null) ? new URL(this.scriptTagNode.src) : new URL('https://tags.catapultx.com');
+        this.continuousLoad = (((_b = this.scriptTagNode.getAttribute('data-continuous-load')) !== null && _b !== void 0 ? _b : url.searchParams.get('continuous-load')) == 'true') ? true : false;
+        if (this.lm.paramString.indexOf('cxLogMode') !== -1 || this.lm.paramString.indexOf('cxtier') !== -1) {
+            this.lm.addLogMode('debug');
+        }
+        if (this.continuousLoad) {
+            this.changingLogType = 'debug';
+        }
+        this.debugLog('Boostrapper initialized.', 'selenium');
+        if (this.isAndroidWebView()) {
+            this.debugLog('Android Web View Detected.');
+        }
+        if (!this.iframeBreakout()) {
+            if (document.querySelectorAll("script[src=\"" + cxOverlayUrl + "\"]").length === 0) {
+                var cxOverlayReference = document.createElement('script');
+                cxOverlayReference.setAttribute('async', '');
+                cxOverlayReference.setAttribute('type', (scriptName.indexOf('esm') >= 0 ? 'module' : 'text/javascript'));
+                cxOverlayReference.setAttribute('src', cxOverlayUrl);
+                document.head.appendChild(cxOverlayReference);
+            }
+        }
+    }
+    CXBootstrapper.prototype.iframeBreakout = function () {
+        if (this.isIframe) {
+            var cxb = this.cxBootstrapperScript;
+            var breakout = ((this.scriptTagNode.getAttribute('attach-to-top') !== null) ||
+                (typeof cxb !== 'undefined' && cxb !== null && cxb.src.indexOf('attach-to-top') >= 0)) ? true : false;
+            if (breakout) {
+                var bootstrapperSrc = this.createBootstrapLoaderSrcURL();
+                var cxOverlayReference_1 = document.createElement('script');
+                cxOverlayReference_1.setAttribute('async', '');
+                cxOverlayReference_1.setAttribute('type', 'text/javascript');
+                Array.from(cxb.attributes).forEach(function (attribute) {
+                    cxOverlayReference_1.setAttribute(attribute.nodeName, attribute.nodeValue);
+                });
+                cxOverlayReference_1.setAttribute('src', bootstrapperSrc);
+                try {
+                    window.top.document.head.appendChild(cxOverlayReference_1);
+                    this.debugLog("constructor - Attaching bootstrapper loader script to top window. " + bootstrapperSrc);
+                    return true;
+                }
+                catch (err) {
+                    this.debugLog('constructor - Unable to attach bootstrapper loader script to top window.');
+                }
+            }
+        }
+        return false;
+    };
+    CXBootstrapper.prototype.createBootstrapLoaderSrcURL = function () {
+        var _a, _b, _c, _d, _e;
+        var bootstrapLoaderUrl = this.getBaseURL() + '/bootstrapper';
+        var url = (typeof this.cxBootstrapperScript !== 'undefined' && this.cxBootstrapperScript !== null) ? new URL(this.cxBootstrapperScript.src) : new URL('https://tags.catapultx.com');
+        var selfScriptNodeAvailable = (typeof this.scriptTagNode !== "undefined" && this.scriptTagNode !== null) ? true : false;
+        var gid = (selfScriptNodeAvailable) ? (_a = this.scriptTagNode.getAttribute('data-group-id')) !== null && _a !== void 0 ? _a : url.searchParams.get('group-id') : url.searchParams.get('group-id');
+        var bid = (selfScriptNodeAvailable) ? (_b = this.scriptTagNode.getAttribute('data-base-id')) !== null && _b !== void 0 ? _b : url.searchParams.get('bid') : url.searchParams.get('bid');
+        var vc = (selfScriptNodeAvailable) ? (_c = this.scriptTagNode.getAttribute('data-video-container')) !== null && _c !== void 0 ? _c : url.searchParams.get('video-container') : url.searchParams.get('video-container');
+        var mod = (selfScriptNodeAvailable) ? (_d = this.scriptTagNode.getAttribute('data-esm6-mod')) !== null && _d !== void 0 ? _d : url.searchParams.get('esm6-mod') : url.searchParams.get('esm6-mod');
+        var cl = (selfScriptNodeAvailable) ? (_e = this.scriptTagNode.getAttribute('data-continuous-load')) !== null && _e !== void 0 ? _e : url.searchParams.get('continuous-load') : url.searchParams.get('continuous-load');
+        var urlParams = [];
+        if (gid != null)
+            urlParams.push('group-id=' + gid);
+        if (vc != null)
+            urlParams.push('video-container=' + vc);
+        if (mod != null)
+            urlParams.push('esm6-mod=' + mod);
+        if (bid != null)
+            urlParams.push('bid=' + bid);
+        if (cl != null)
+            urlParams.push('continuous-load=' + cl);
+        bootstrapLoaderUrl = bootstrapLoaderUrl + "?" + urlParams.join('&');
+        return bootstrapLoaderUrl;
+    };
+    CXBootstrapper.prototype.isAndroidWebView = function () {
+        if (/(Version\/\d+.*\/\d+.0.0.0 Mobile|; ?wv)/i.test(navigator.userAgent)) {
+            this.debugLog('Android webview navigator detected: ' + navigator.userAgent);
+            return true;
+            // eslint-disable-next-line dot-notation
+        }
+        else if (typeof window['Android'] !== 'undefined') {
+            this.debugLog('Android webview window.Android variable detected.');
+            return true;
+            // eslint-disable-next-line no-prototype-builtins
+        }
+        else if (window.hasOwnProperty('Android ')) {
+            this.debugLog('Android webview window.hasOwnProperty("Android ") detected.');
+            return true;
+        }
+        return false;
+    };
+    CXBootstrapper.prototype.getBaseURL = function (base) {
+        var scriptSrc = this.scriptTagNode.src;
+        base !== null && base !== void 0 ? base : (base = scriptSrc.substring(0, scriptSrc.indexOf('/cxo/cx-bootstrapper')));
+        var cxtier;
+        var tierParam;
+        var windowLocation = window.location;
+        var windowProtocol = window.location.protocol;
+        if (this.isIframe) {
+            this.debugLog('constructor iframe detected');
+            try {
+                windowLocation = window.top.location;
+                windowProtocol = window.top.location.protocol;
+            }
+            catch (err) {
+                this.debugLog('constructor error was trapped accessing origin location ' + err);
+            }
+        }
+        tierParam = window.parent.location.search.substring(1).split('&').filter(function (el) { return el.indexOf('cxtier=') > -1; })[0];
+        if (typeof tierParam !== 'undefined' && tierParam !== null) {
+            this.debugLog("querystring cxtier found: " + tierParam);
+            cxtier = tierParam.split('=')[1];
+            switch (cxtier.toUpperCase()) {
+                case 'DEV':
+                    cxtier = windowProtocol + '//dev.catapultx.com';
+                    break;
+                case 'STAGE':
+                    cxtier = windowProtocol + '//stage.catapultx.com';
+                    break;
+                case 'LOCAL':
+                    cxtier = 'http://localhost:3001';
+                    break;
+                default:
+                    this.debugLog("cxtier " + tierParam + " not recognized as valid environment( dev || stage || local )");
+                    cxtier = null;
+                    break;
+            }
+        }
+        if (typeof cxtier !== "undefined" && cxtier !== null) {
+            base = cxtier;
+            this.debugLog("constructor cxtier used for --base = " + base);
+        }
+        else {
+            if (typeof base === 'undefined' || base === null || base === '') {
+                base = 'https://tags.catapultx.com';
+            }
+            this.debugLog("constructor --base = " + base);
+        }
+        return base;
+    };
+    CXBootstrapper.prototype.initCX = function (options) {
+        this.options = options;
+        for (var i = 0; i < this.options.videoDescriptors.length; i++) {
+            var videoDescriptor = this.options.videoDescriptors[i];
+            this.renderCXOverlay(videoDescriptor);
+        }
+    };
+    CXBootstrapper.prototype.renderCXOverlay = function (videoDescriptor) {
+        var _this = this;
+        var _a;
+        var videoContainer = (_a = videoDescriptor.videoElement) !== null && _a !== void 0 ? _a : null;
+        var videoTag = null;
+        if (videoContainer == null) {
+            this.debugLog('renderCXOverlay --searchingForVideoTag on ' + videoDescriptor.videoElementId);
+        }
+        else {
+            this.debugLog('renderCXOverlay --videoElement provided: ' + String(videoDescriptor.videoElement));
+            videoDescriptor.videoElementId = 'cx-video-direct';
+            videoContainer.classList.add(videoDescriptor.videoElementId);
+            this.querySelectorId = "." + videoDescriptor.videoElementId;
+        }
+        var timeout = 0;
+        var playerRenderCheck = setInterval(function () {
+            var _a, _b;
+            if (timeout === 90000 && !_this.continuousLoad) {
+                _this.debugLog('renderCXOverlay --noSrcFound');
+                clearInterval(playerRenderCheck);
+            }
+            var foundSrc = false;
+            if (typeof videoDescriptor.videoElement === 'undefined' || videoDescriptor.videoElement === null) {
+                videoContainer = null;
+                _this.querySelectorId = null;
+            }
+            videoContainer !== null && videoContainer !== void 0 ? videoContainer : (videoContainer = document.querySelector("#" + videoDescriptor.videoElementId + ":not([cx-id])"));
+            (_a = _this.querySelectorId) !== null && _a !== void 0 ? _a : (_this.querySelectorId = (videoContainer !== null) ? '#' + videoDescriptor.videoElementId : null);
+            videoContainer !== null && videoContainer !== void 0 ? videoContainer : (videoContainer = document.querySelector("." + videoDescriptor.videoElementId + ":not([cx-id])"));
+            (_b = _this.querySelectorId) !== null && _b !== void 0 ? _b : (_this.querySelectorId = (videoContainer !== null) ? '.' + videoDescriptor.videoElementId : null);
+            if (videoContainer !== undefined && videoContainer !== null) {
+                _this.debugLog("renderCXOverlay --videoContainerFound " + videoDescriptor.videoElementId + "\n --videoContainerTagName = " + videoContainer.tagName, _this.changingLogType);
+                if (videoContainer.tagName.toUpperCase() === 'IFRAME') {
+                    _this.debugLog('renderCXOverlay --iframe');
+                    var src = videoContainer.getAttribute('src');
+                    if (src.indexOf('youtube.com/embed/') !== -1) {
+                        _this.debugLog('renderCXOverlay --playerType = youtube');
+                        videoDescriptor.playerType = 'YOUTUBE';
+                        foundSrc = true;
+                    }
+                }
+                else {
+                    videoTag = (videoContainer.tagName.toUpperCase() === 'VIDEO') ? videoContainer : _this.findVideoElement(videoContainer);
+                    if (videoTag !== null) {
+                        if (videoTag.src !== undefined &&
+                            videoTag.src !== null &&
+                            videoTag.src !== '') {
+                            foundSrc = true;
+                        }
+                        else {
+                            if (videoTag.getElementsByTagName('SOURCE').length > 0) {
+                                var sourceObj = videoTag.getElementsByTagName('SOURCE')[0];
+                                if (sourceObj.src !== undefined &&
+                                    sourceObj.src !== null &&
+                                    sourceObj.src !== '') {
+                                    foundSrc = true;
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        //Find iframes
+                        var iframeList = videoContainer.querySelectorAll('iframe');
+                        iframeList.forEach(function (frame) {
+                            try {
+                                if (typeof frame['cxappend'] === 'undefined' || frame['cxappend'] === null) {
+                                    var videoNodes = frame.contentDocument.querySelectorAll('video');
+                                    if (videoNodes.length > 0) {
+                                        frame['cxappend'] = 'true';
+                                        var frameBody = frame.contentDocument.querySelector('body');
+                                        frameBody.classList.add('cxroot');
+                                        var bootstrapperSrc = _this.createBootstrapLoaderSrcURL();
+                                        bootstrapperSrc = (_this.getBaseURL() + '/bootstrapper?' + bootstrapperSrc.split('?')[1].split('&').map(function (params) {
+                                            if (params.indexOf('video-container') !== -1) {
+                                                params = params.split('=')[0] + '=cxroot';
+                                            }
+                                            return params;
+                                        }).join('&'));
+                                        var cxBootstrapperClone = document.createElement('script');
+                                        cxBootstrapperClone.setAttribute('async', '');
+                                        cxBootstrapperClone.setAttribute('type', 'text/javascript');
+                                        cxBootstrapperClone.setAttribute('src', bootstrapperSrc);
+                                        frame.contentDocument.head.appendChild(cxBootstrapperClone);
+                                        _this.debugLog('renderCXOverlay - Adding bootstrapper to video iframe. ' + frame.outerHTML);
+                                    }
+                                }
+                            }
+                            catch (err) {
+                                _this.debugLog('unable to access video iframe: ' + frame.outerHTML);
+                                frame['cxappend'] = 'false';
+                            }
+                        });
+                    }
+                }
+            }
+            if (foundSrc) {
+                var isAdvert = false;
+                for (var i = 0; i < _this.identifyAdvertVars.length; i++) {
+                    if (typeof videoTag[_this.identifyAdvertVars[i]] !== 'undefined' && videoTag[_this.identifyAdvertVars[i]] !== null && videoTag[_this.identifyAdvertVars[i]] !== false) {
+                        _this.debugLog('isAdvert: ' + videoTag[_this.identifyAdvertVars[i]]);
+                        isAdvert = true;
+                        break;
+                    }
+                }
+                for (var i = 0; i < _this.videoAdvertIdentifierNodes.length; i++) {
+                    var foundAdvertElement = videoContainer.querySelector(_this.videoAdvertIdentifierNodes[i][0]);
+                    if (foundAdvertElement !== null) {
+                        if (typeof _this.videoAdvertIdentifierNodes[i][1] !== 'undefined' && _this.videoAdvertIdentifierNodes[i][1] != null) {
+                            if (_this.videoAdvertIdentifierNodes[i][1] === 'display') {
+                                if (window.getComputedStyle(foundAdvertElement).getPropertyValue('display').toLowerCase() !== 'none') {
+                                    isAdvert = true;
+                                }
+                            }
+                            else if (_this.videoAdvertIdentifierNodes[i][1] === 'paused') {
+                                if (!foundAdvertElement.paused) {
+                                    isAdvert = true;
+                                }
+                            }
+                        }
+                        else {
+                            isAdvert = true;
+                        }
+                        if (isAdvert) {
+                            _this.debugLog("Current video identified as advertisement through node: " + _this.videoAdvertIdentifierNodes[i][0], _this.changingLogType);
+                            break;
+                        }
+                    }
+                }
+                if (!isAdvert) {
+                    _this.debugLog('renderCXOverlay --foundTagSrc', _this.changingLogType);
+                    if (!_this.continuousLoad) {
+                        clearInterval(playerRenderCheck);
+                    }
+                    if (videoTag.cxInitialized != null) {
+                        _this.debugLog("renderCXOverlay --overlay already attached to video " + videoDescriptor.videoElementId + ". Will not re-initialize.", _this.changingLogType);
+                    }
+                    else if (_this.isAndroidWebView()) {
+                        _this.debugLog("renderCXOverlay --is android web view device " + videoDescriptor.videoElementId + ". Will not initialize.", _this.changingLogType);
+                    }
+                    else {
+                        var cxTag = document.createElement('cx-overlay');
+                        _this.RenderCXTag(cxTag, videoDescriptor, videoTag, videoContainer);
+                        _this.debugLog('CX-Overlay initialized.', 'selenium');
+                    }
+                }
+                else {
+                    _this.debugLog('renderCXOverlay --foundTagSrc --isAdvert', _this.changingLogType);
+                    _this.debugLog('Video identified as advertisement.', 'selenium');
+                }
+            }
+            timeout += 1000;
+        }, 1000);
+    };
+    Object.defineProperty(CXBootstrapper.prototype, "generateUniqueId", {
+        get: function () {
+            var ts = Math.round(+new Date() / 1000.0);
+            var rand;
+            try {
+                var uu32 = new Uint32Array(1);
+                rand = crypto.getRandomValues(uu32)[0];
+            }
+            catch (e) {
+                rand = Math.round(Math.random() * 2147483647);
+            }
+            return [rand, ts].join('.').toString();
+        },
+        enumerable: false,
+        configurable: true
+    });
+    CXBootstrapper.prototype.findVideoElement = function (node) {
+        this.debugLog('findVideoElement', this.changingLogType);
+        var cnode = null;
+        var videoNodes = node.getElementsByTagName('video');
+        if (videoNodes.length > 1) {
+            for (var n = 0; n < videoNodes.length; n++) {
+                if (!this.isAdNode(node, videoNodes[n])) {
+                    cnode = videoNodes[n];
+                    break;
+                }
+            }
+            if (cnode === null) {
+                cnode = videoNodes[0];
+            }
+        }
+        else if (videoNodes.length === 1) {
+            cnode = videoNodes[0];
+        }
+        return cnode;
+    };
+    CXBootstrapper.prototype.isAdNode = function (topNode, currentNode) {
+        var isAd = false;
+        if (topNode !== currentNode) {
+            if ((currentNode.id != null &&
+                (currentNode.id.toLowerCase().indexOf('_ad') !== -1 ||
+                    currentNode.id.toLowerCase().indexOf('-ad') !== -1)) ||
+                (currentNode.className != null &&
+                    (currentNode.className.toLowerCase().indexOf('-ad') !== -1 ||
+                        currentNode.className.toLowerCase().indexOf('_ad') !== -1))) {
+                isAd = true;
+            }
+            else {
+                isAd = this.isAdNode(topNode, currentNode.parentElement);
+            }
+        }
+        return isAd;
+    };
+    CXBootstrapper.prototype.RenderCXTag = function (cxTag, videoDescriptor, videoElement, videoContainer) {
+        cxTag.setAttribute('group-id', this.groupId);
+        cxTag.setAttribute('isesm', this.isEsm6);
+        if (typeof videoDescriptor.videoElementId !== 'undefined' && videoDescriptor.videoElementId !== null) {
+            var vidId = this.querySelectorId;
+            if (this.continuousLoad) {
+                var uniqueCXID = this.generateUniqueId;
+                videoContainer.setAttribute('cx-id', uniqueCXID);
+                cxTag.setAttribute('video-element-id', vidId + "[cx-id='" + uniqueCXID + "']");
+            }
+            else {
+                cxTag.setAttribute('video-element-id', vidId);
+            }
+        }
+        if (videoElement != null) {
+            videoElement.cxInitialized = true;
+            cxTag.foundVideoNode = videoElement;
+        }
+        cxTag.identifyAdvertVars = this.identifyAdvertVars;
+        videoContainer.insertBefore(cxTag, videoContainer.firstChild);
+    };
+    CXBootstrapper.prototype.debugLog = function (txt, type) {
+        if (type === void 0) { type = 'boot'; }
+        txt = (type === 'boot') ? 'cxb.' + txt : txt;
+        this.lm.evaluateDebugLog(txt, type);
+    };
+    CXBootstrapper.BootLogManager = /** @class */ (function () {
+        function class_1() {
+            var _a;
+            this._logMode = 'error-info-boot';
+            this.windowURL = window.location.href;
+            this.bootColors = 'background: #0d47a1; color: #FFF; padding:2px 12px;';
+            this.debugColors = 'background: #0952c5; color: #FFF; padding:2px 12px;';
+            if (window.self !== window.top) {
+                try {
+                    if (document.referrer != null && document.referrer !== '') {
+                        this.windowURL = document.referrer;
+                    }
+                }
+                catch (err) {
+                    this.evaluateDebugLog(['CX unable to determine iframe document referrer at log manager- ', err], 'error');
+                }
+            }
+            this.paramString = (_a = this.windowURL.split('?')[1]) !== null && _a !== void 0 ? _a : '';
+            this.paramArray = this.paramString.split('&');
+            if (this.paramString.indexOf('cxLogMode=') >= 0) {
+                this._logMode = this.paramArray
+                    .find(function (x) { return x.indexOf('cxLogMode') >= 0; })
+                    .split('=')[1];
+            }
+        }
+        Object.defineProperty(class_1.prototype, "logMode", {
+            get: function () {
+                return this._logMode;
+            },
+            enumerable: false,
+            configurable: true
+        });
+        class_1.prototype.addLogMode = function (addLog) {
+            this._logMode += '-' + addLog;
+        };
+        class_1.prototype.evaluateDebugLog = function (l, type) {
+            var logArr = typeof l === 'string' ? [l] : __spreadArray([], l);
+            if (this.logMode.toLowerCase().indexOf(type.toLowerCase()) >= 0 ||
+                this.logMode.toLowerCase().indexOf('all') >= 0) {
+                if (type === 'selenium') {
+                    console.log.apply(console, __spreadArray(['%cCXselenium%c%s',
+                        'font-size:0em; color:white;',
+                        'background: rgba(0,0,0, 1); color: rgba(255,255,255, .75);',
+                        logArr.splice(0, 1)[0]], logArr));
+                }
+                else if (type === 'debug') {
+                    console.log.apply(console, __spreadArray(['%cCXdebug%c%s',
+                        'font-size:0em; color:white;',
+                        this.debugColors,
+                        logArr.splice(0, 1)[0]], logArr));
+                }
+                else {
+                    console.log.apply(console, __spreadArray(['%cCXboot%c%s',
+                        'font-size:0em; color:white;',
+                        this.bootColors,
+                        logArr.splice(0, 1)[0]], logArr));
+                }
+            }
+        };
+        return class_1;
+    }());
+    return CXBootstrapper;
+}());
+;
+(function selfLoader() {
+    //console.log('%c cxb.selfLoading current executing script: ' + document.currentScript.outerHTML, 'background: #0d47a1; color: #FFF')
+    var cxBootstrapperInitScript = document.currentScript;
+    var bootstrapperScripts = document.querySelectorAll('script[src*="/bootstrapper"]');
+    var cxBootstrapperScript;
+    if (bootstrapperScripts.length > 0) {
+        bootstrapperScripts.forEach(function (s) {
+            if ((typeof cxBootstrapperScript === 'undefined' || cxBootstrapperScript === null) && (s.src.indexOf('catapultx.com') !== -1 || s.src.indexOf('localhost') !== -1)) {
+                cxBootstrapperScript = s;
+            }
+        });
+    }
+    if ((typeof cxBootstrapperScript !== 'undefined' && cxBootstrapperScript !== null)) {
+        var cxBootstrapperParams = cxBootstrapperScript.src.split('?');
+        if (cxBootstrapperInitScript.getAttribute('data-video-container') != null || cxBootstrapperInitScript.getAttribute('data-group-id') != null) {
+            var ds = cxBootstrapperInitScript.dataset;
+            var attributes = [];
+            for (var param in ds) {
+                attributes.push("" + ds[param]);
+            }
+            console.log("%c cxb.selfLoading with attributes: " + String(attributes), 'background: #0d47a1; color: #FFF');
+            selfLoadCXB();
+        }
+        else if (cxBootstrapperParams.length > 1 && (cxBootstrapperParams[1].indexOf('group-id') >= 0 && cxBootstrapperParams[1].indexOf('video-container') >= 0)) {
+            var paramsString_1 = '';
+            cxBootstrapperParams[1].split('&').forEach(function (p) { if (p.split('=').length > 0)
+                paramsString_1 += (paramsString_1.length > 0) ? ',' + p.split('=')[1] : p.split('=')[1]; });
+            console.log('%c cxb.selfLoading with url params: ' + paramsString_1, 'background: #0d47a1; color: #FFF');
+            selfLoadCXB();
+        }
+        else {
+            console.log('%c cxb.selfloader - no params with boostrapper loader. Will not attempt self load.', 'background: #0d47a1; color: #FFF');
+        }
+    }
+    else {
+        console.log('%c cxb.selfloader - no bootstrapper loader script found. attempting to call selfload', 'background: #0d47a1; color: #FFF');
+        selfLoadCXB();
+    }
+    function selfLoadCXB() {
+        var _a, _b, _c, _d;
+        var url = (typeof cxBootstrapperScript !== 'undefined' && cxBootstrapperScript !== null) ? new URL(cxBootstrapperScript.src) : new URL('https://tags.catapultx.com');
+        var selfScriptNodeAvailable = (typeof cxBootstrapperInitScript !== "undefined" && cxBootstrapperInitScript !== null) ? true : false;
+        var gid = (selfScriptNodeAvailable) ? (_a = cxBootstrapperInitScript.getAttribute('data-group-id')) !== null && _a !== void 0 ? _a : url.searchParams.get('group-id') : url.searchParams.get('group-id');
+        var bid = (selfScriptNodeAvailable) ? (_b = cxBootstrapperInitScript.getAttribute('data-base-id')) !== null && _b !== void 0 ? _b : url.searchParams.get('bid') : url.searchParams.get('bid');
+        var vc = (selfScriptNodeAvailable) ? (_c = cxBootstrapperInitScript.getAttribute('data-video-container')) !== null && _c !== void 0 ? _c : url.searchParams.get('video-container') : url.searchParams.get('video-container');
+        var mod = (selfScriptNodeAvailable) ? (_d = cxBootstrapperInitScript.getAttribute('data-esm6-mod')) !== null && _d !== void 0 ? _d : url.searchParams.get('esm6-mod') : url.searchParams.get('esm6-mod');
+        if (gid !== undefined && gid !== null && vc !== undefined && vc !== null) {
+            var isEsm6Mod = (typeof mod !== 'undefined' && mod !== null && mod.toLowerCase() === 'true') ? true : false;
+            var cxbc = new CXBootstrapper(gid, bid, isEsm6Mod);
+            var videocontainers = vc.split('|');
+            var videoDescriptorEntries_1 = [];
+            videocontainers.forEach(function (videoContainerId) {
+                videoDescriptorEntries_1.push({
+                    product: 'overlay',
+                    videoElementId: videoContainerId
+                });
+            });
+            cxbc.initCX({
+                videoDescriptors: videoDescriptorEntries_1
+            });
+        }
+    }
+})();
